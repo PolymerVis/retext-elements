@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+
+    <title>retext-readability demo</title>
+
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+    <link rel="import" href="../../polymer/lib/elements/dom-bind.html">
+    <link rel="import" href="../../polymer/lib/elements/dom-repeat.html">
+    <link rel="import" href="../../paper-input/paper-textarea.html">
+    <link rel="import" href="../../iron-flex-layout/iron-flex-layout-classes.html">
+    <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
+    <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
+    <link rel="import" href="../retext-elements.html">
+
+    <custom-style>
+      <style is="custom-style" include="demo-pages-shared-styles iron-flex iron-flex-alignment">
+        .cell {
+          font-size: 0.8em;
+        }
+        .head {
+          font-weight: bold;
+        }
+        .row {
+          padding: 10px;
+        }
+        .row:nth-child(odd) {
+          background-color: #eaeaea;
+        }
+        .index {
+          font-style: italic;
+          color: #888;
+        }
+        pre {
+          color: #888;
+          font-size: 0.8em;
+          white-space: pre-wrap;       /* css-3 */
+          white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+          white-space: -pre-wrap;      /* Opera 4-6 */
+          white-space: -o-pre-wrap;    /* Opera 7 */
+          word-wrap: break-word;       /* Internet Explorer 5.5+ */
+        }
+      </style>
+    </custom-style>
+  </head>
+  <body>
+    <div class="vertical-section-container centered">
+      <h3>Basic retext-readability demo</h3>
+      <demo-snippet>
+        <template>
+          <!-- allow data-binding outside Polymer -->
+          <dom-bind>
+            <template>
+              <!-- Button to populate textarea with sample text -->
+              <button onclick="javascript:populate()">Populate with sample text</button>
+
+              <!-- textarea where the text is data-bind -->
+              <paper-textarea placeholder="Text" value="{{text}}">
+              </paper-textarea>
+
+              <!-- calculate readability scores by paragraph -->
+              <retext-readability
+                text="[[text]]"
+                unit="RootNode"
+                last-result="{{results}}"></retext-readability>
+
+              <!-- Template to render a table to show results -->
+              <template is="dom-repeat" items="[[results]]" as="unit">
+                <div class="row">
+
+                  <div class="layout horizontal">
+
+                    <!-- show readability index -->
+                    <div class="layout vertical flex">
+                      <div class="layout horizontal cell head">
+                        <div class="flex">Index</div>
+                        <div class="flex">Suitable reading age</div>
+                      </div>
+                      <template is="dom-repeat" items="[[unit.readability]]">
+                        <div class="layout horizontal cell">
+                          <div class="index flex">[[item.index]]</div>
+                          <div class="flex">[[item.age]]</div>
+                        </div>
+                      </template>
+                    </div>
+
+                    <!-- show underlaying stats -->
+                    <div class="layout vertical flex">
+                      <template is="dom-repeat" items="[[unit.counts]]">
+                        <div class="layout horizontal cell">
+                          <div class="index flex">[[item.index]]</div>
+                          <div class="flex">[[item.count]]</div>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+
+                  <!-- unit of text -->
+                  <pre>[[unit.text]]</pre>
+
+                </div>
+              </template>
+
+              <script>
+                var demo = document.querySelector('dom-bind');
+                function populate() {
+                  demo.text = "Most terribly cold it was; it snowed, and was nearly quite dark, and evening-- the last evening of the year. In this cold and darkness there went along the street a poor little girl, bareheaded, and with naked feet. When she left home she had slippers on, it is true; but what was the good of that? They were very large slippers, which her mother had hitherto worn; so large were they; and the poor little thing lost them as she scuffled away across the street, because of two carriages that rolled by dreadfully fast.";
+                }
+              </script>
+
+            </template>
+          </dom-bind>
+
+        </template>
+      </demo-snippet>
+    </div>
+  </body>
+</html>

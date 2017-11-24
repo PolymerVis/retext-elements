@@ -1,0 +1,59 @@
+{
+  "name": "@polymer-vis/retext-elements",
+  "version": "2.0.0",
+  "description": "A suite of Polymer 2.0 elements to do various browser-based text processing (powered by retext) with web-workers.",
+  "main": "retext-elements.html",
+  "scripts": {
+    "lint": "npx eslint *.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "precommit": "lint-staged",
+    "build": "npx gulp build"
+  },
+  "lint-staged": {
+    "./lib/*.{js}": [
+      "prettier --write",
+      "git add"
+    ]
+  },
+  "keywords": [
+    "polymer",
+    "web-components",
+    "readability",
+    "smog",
+    "fry",
+    "gunning fog",
+    "dale–chall",
+    "flesch–kincaid"
+  ],
+  "author": "eterna2 <eterna2@hotmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babelify": "^8.0.0",
+    "browserify": "^14.5.0",
+    "eslint": "^4.6.1",
+    "eslint-config-google": "^0.7.0",
+    "eslint-config-prettier": "^2.5.0",
+    "eslint-plugin-html": "^3.2.2",
+    "eslint-plugin-prettier": "^2.3.1",
+    "gulp": "^3.9.1",
+    "gulp-sourcemaps": "^2.6.1",
+    "gulp-uglify": "^3.0.0",
+    "gulp-util": "^3.0.8",
+    "husky": "^0.14.3",
+    "lint-staged": "^4.2.1",
+    "polymer-cli": "^1.5.4",
+    "prettier": "^1.7.0",
+    "vinyl-buffer": "^1.0.0",
+    "vinyl-source-stream": "^1.1.0"
+  },
+  "dependencies": {
+    "retext-english": "^3.0.0",
+    "retext-keywords": "^4.0.1",
+    "retext-sentiment": "^4.1.0",
+    "retext-stringify": "^2.0.0",
+    "to-vfile": "^2.1.2",
+    "unified": "^6.1.6"
+  }
+}

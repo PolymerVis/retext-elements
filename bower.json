@@ -1,0 +1,21 @@
+{
+  "name": "retext-elements",
+  "description": "A suite of Polymer 2.0 elements to do various browser-based text processing (powered by retext) with web-workers.",
+  "main": "retext-elements.html",
+  "author": "eterna2 <eterna2@hotmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "polymer": "Polymer/polymer#^2.0.0",
+    "web-worker": "PolymerVis/web-worker#^2.0.0"
+  },
+  "devDependencies": {
+    "iron-demo-helpers": "PolymerElements/iron-demo-helpers#^2.0.0",
+    "web-component-tester": "Polymer/web-component-tester#^6.0.0",
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^1.0.0",
+    "file-drop-zone": "PolymerVis/file-drop-zone#^2.0.0",
+    "paper-input": "PolymerElements/paper-input#^2.0.4"
+  },
+  "resolutions": {
+    "polymer": "^2.0.0"
+  }
+}

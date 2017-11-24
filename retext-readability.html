@@ -1,0 +1,243 @@
+<link rel="import" href="../polymer/polymer-element.html">
+<link rel="import" href="../polymer/lib/utils/debounce.html">
+
+<link rel="import" href="../web-worker/web-worker.html">
+
+<dom-module id="retext-readability">
+<script>
+/**
+ * `retext-readability` is available to calculate the readability scores at sentence, paragraph, and document level. The calculation is done inside a web worker to prevent blocking of the UI when the text or file is big.
+ *
+ * The available readability indexes are:
+ * - [Dale–Chall readability formula](https://en.wikipedia.org/wiki/Dale%E2%80%93Chall_readability_formula)
+ * - [Automated Readability Index](https://en.wikipedia.org/wiki/Automated_readability_index)
+ * - [Coleman–Liau index](https://en.wikipedia.org/wiki/Coleman%E2%80%93Liau_index)
+ * - [Flesch–Kincaid grade level](https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests)
+ * - [SMOG index](https://en.wikipedia.org/wiki/SMOG)
+ * - [Gunning fog index](https://en.wikipedia.org/wiki/Gunning_fog_index)
+ * - [Spache readability formula](https://en.wikipedia.org/wiki/Spache_readability_formula)
+ *
+ * *Note that each readability index has its own assumptions and limitations. E.g. SMOG requires at least 30 sentences, while Spache is only suitable up to 4th grade.*
+ *
+ * ### Quick start
+ * #### Analyzing text contents
+ * Download and analyze a text file from a URL.
+ * ```html
+ * <retext-readability
+ *   url="./thelittlematchgirl.txt"
+ *   unit="RootNode"
+ *   last-result="{{results}}"></retext-readability>
+ * ```
+ *
+ * Read and analyze a text [file](https://developer.mozilla.org/en-US/docs/Web/API/File).
+ * ```html
+ * <retext-readability
+ *   file="[[file]]"
+ *   unit="ParagraphNode"
+ *   last-result="{{results}}"></retext-readability>
+ * ```
+ *
+ * Analyze a text value.
+ * ```html
+ * <retext-readability
+ *   text="This is a very readable sentence"
+ *   unit="SentenceNode"
+ *   last-result="{{results}}"></retext-readability>
+ * ```
+ *
+ * #### Retrieving the readability scores
+ * Data-bind to the most recent analysis result.
+ * ```html
+ * <retext-readability
+ *   text="This is a very readable sentence"
+ *   last-result="{{results}}"></retext-readability>
+ * ```
+ *
+ * Listening to most recent analysis result.
+ * ```html
+ * <retext-readability
+ *   text="This is a very readable sentence"
+ *   on-result="_onResult"></retext-readability>
+ * ```
+ *
+ * #### Configurations and parameters
+ * Calculate readability scores at what granularity with the attribute `unit`:
+ * - `RootNode`: The entire text as a whole
+ * - `ParagraphNode`: Each paragraph
+ * - `SentenceNode`: Each sentence
+ * ```html
+ * <retext-readability
+ *   text="This is a very readable sentence"
+ *   unit="SentenceNode"
+ *   last-result="{{results}}"></retext-readability>
+ * ```
+ *
+ * Do not calculate the readability scores if the sentence has less than the minimum number of words.
+ * ```html
+ * <retext-readability
+ *   text="This is a very readable sentence"
+ *   min-words=5
+ *   on-result="_onResult"></retext-readability>
+ * ```
+ *
+ *
+ * @customElement
+ * @polymer
+ * @demo demo/index.html Basic demo
+ * @demo demo/file.html Load from file demo
+ * @demo demo/textarea.html Data-bind with textarea demo
+ */
+class RetextReadability extends Polymer.Element {
+  static get is() {
+    return 'retext-readability';
+  }
+  /**
+   * Fired when analysis result is ready.
+   *
+   * @event result
+   * @param {Array} scores Fired when analysis result is ready.
+   */
+   /**
+    * Fired when error is encountered.
+    *
+    * @event error
+    * @param {String} error Fired when error is encountered.
+    */
+  static get properties() {
+    return {
+      /**
+       * Text to analyze.
+       * @type {String}
+       */
+      text: {
+        type: String
+      },
+      /**
+       * Text `File` to analyze.
+       * @type {File}
+       */
+      file: {
+        type: File
+      },
+      /**
+       * Url to the text file to analyze.
+       * @type {String}
+       */
+      url: {
+        type: String
+      },
+      /**
+       * The unit text to calculate readability index on.
+       * `RootNode`,`ParagraphNode` or `SentenceNode`.
+       * @type {String}
+       */
+      unit: {
+        type: String,
+        value: 'RootNode'
+      },
+      /**
+       * Minimum number of words a sentence should have when warning. Most
+       * algorithms are designed to take a large sample of sentences to detect
+       * the body’s reading level. This plug-in, however, works on a
+       * per-sentence basis. This makes the results quite skewered when said
+       * sentence has, for example, a few long words or some unknown ones.
+       * @type {Number}
+       */
+      minWords: {
+        type: Number,
+        value: 5
+      },
+      /**
+       * The most recent readability output returned from the webworker. It
+       * has the `location` of the sentence or paragraph, as well as the score
+       * and age group of the individual indexes.
+       * @type {{location: Object, readability: {index: String, age: Number, score: Number}[], text: String}[]}
+       */
+      lastResult: {
+        type: Array,
+        notify: true,
+        readOnly: true
+      },
+      /**
+       * URL to the web worker script file to calculate the readability scores.
+       * @type {String}
+       */
+      webWorker: {
+        type: String,
+        value: './webworkers/readability-worker.js'
+      },
+      /**
+       * Number of milliseconds to debounce the `analyze` requests.
+       * @type {Number}
+       */
+      debounce: {
+        type: Number,
+        value: 500
+      },
+      /**
+       * Debouncer job for `analyze` function.
+       * @type {Polymer.Debouncer}
+       */
+      _debounceJob: Object
+    };
+  }
+
+  static get observers() {
+    return ['_debounceAnalyze(text,url,file,unit,minWords,webWorker)'];
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+  }
+
+  _debounceAnalyze() {
+    this._debounceJob = Polymer.Debouncer.debounce(
+      this._debounceJob,
+      Polymer.Async.timeOut.after(this.debounce),
+      () => {
+        this._analyze();
+      }
+    );
+  }
+
+  _analyze() {
+    if (!this.text && !this.url && !this.file) return;
+    this.analyze({
+      text: this.text,
+      file: this.file,
+      url: this.url ? this.resolveUrl(this.url, location.href): null,
+      unit: this.unit,
+      minWords: this.minWords
+    }).then(e => {
+      this._setLastResult(e);
+      this.dispatchEvent(new CustomEvent('result', {detail: e}));
+    }).catch(error => {
+      this.dispatchEvent(new CustomEvent('error', {detail: error}));
+    });
+  }
+
+  /**
+   * Create a web worker and calculate the various readability indexes.
+   *
+   * Either `text`, `file`, or `url` must be a valid input.
+   * - `text` is the raw text to be analyzed
+   * - `file` is the text [File](https://developer.mozilla.org/en-US/docs/Web/API/File) to be analyzed
+   * - `url` is the url to the text file to be analyzed
+   * - `unit` describe how we want to break up the text before analyzing (`RootNode`, `ParagraphNode`, or `SentenceNode`).
+   * - `minWords` ignores unit text with less than this number of words
+   * @param {{text: String, file: File, url: String, minWords: Number, unit: String}} job An object describing the job.
+   * @return {Promise}
+   */
+  analyze(job) {
+    return document
+      .createElement('web-worker')
+      .executeUrlOnce(
+        this.resolveUrl(this.webWorker),
+        job
+      );
+  }
+}
+
+window.customElements.define(RetextReadability.is, RetextReadability);
+</script>
+</dom-module>
